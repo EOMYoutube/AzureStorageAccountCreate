@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Zaman takibi başlat
+start_time=$(date +%s)
+
+# Renkli çıktılar için yardımcı fonksiyonlar
+function print_info() {
+  echo -e "\033[1;34m[INFO]\033[0m $1"
+}
+
+function print_success() {
+  echo -e "\033[1;32m[SUCCESS]\033[0m $1"
+}
+
+function print_error() {
+  echo -e "\033[1;31m[ERROR]\033[0m $1"
+}
+
 # Kullanıcıdan dinamik parametreler alalım
 read -p "Resource Group Name: " resourceGroupName
 read -p "Location (e.g., EastUS, WestEurope): " location
@@ -11,24 +27,27 @@ read -p "Access Tier (Hot, Cool, Archive): " accessTier
 # Eğer depolama hesabı adı boş bırakıldıysa benzersiz bir ad üretelim
 if [ -z "$storageAccountName" ]; then
   storageAccountName="mystorageaccount$(date +%s)"  # Benzersiz bir ad üret
+  print_info "Depolama hesabı adı boş bırakıldı, benzersiz bir ad üretildi: $storageAccountName"
 fi
 
 # Resource Group'un var olup olmadığını kontrol et, yoksa oluştur
+print_info "Resource Group kontrol ediliyor..."
 if ! az group show --name $resourceGroupName &>/dev/null; then
-  echo "Resource Group '$resourceGroupName' mevcut değil. Oluşturuluyor..."
+  print_info "Resource Group '$resourceGroupName' mevcut değil. Oluşturuluyor..."
   az group create --name $resourceGroupName --location $location
   if [ $? -ne 0 ]; then
-    echo "Hata: Resource Group oluşturulamadı!"
+    print_error "Hata: Resource Group oluşturulamadı!"
     exit 1
   fi
-  echo "Resource Group başarıyla oluşturuldu."
+  print_success "Resource Group başarıyla oluşturuldu."
 else
-  echo "Resource Group '$resourceGroupName' zaten mevcut."
+  print_info "Resource Group '$resourceGroupName' zaten mevcut."
 fi
 
 # Storage Account'un var olup olmadığını kontrol et, yoksa oluştur
+print_info "Storage Account kontrol ediliyor..."
 if ! az storage account show --name $storageAccountName --resource-group $resourceGroupName &>/dev/null; then
-  echo "Storage Account '$storageAccountName' oluşturuluyor..."
+  print_info "Storage Account '$storageAccountName' oluşturuluyor..."
   az storage account create \
     --name $storageAccountName \
     --resource-group $resourceGroupName \
@@ -37,31 +56,38 @@ if ! az storage account show --name $storageAccountName --resource-group $resour
     --kind $kind \
     --access-tier $accessTier
   if [ $? -ne 0 ]; then
-    echo "Hata: Storage Account oluşturulamadı!"
+    print_error "Hata: Storage Account oluşturulamadı!"
     exit 1
   fi
-  echo "Azure Storage Account başarıyla oluşturuldu: $storageAccountName"
+  print_success "Azure Storage Account başarıyla oluşturuldu: $storageAccountName"
 else
-  echo "Storage Account '$storageAccountName' zaten mevcut."
+  print_info "Storage Account '$storageAccountName' zaten mevcut."
 fi
 
 # Storage Account Bilgilerini Getir
-echo "Depolama Hesabı Detayları:"
+print_info "Depolama Hesabı Detayları getiriliyor..."
 az storage account show --name $storageAccountName --resource-group $resourceGroupName --query "{Name:name, Location:primaryLocation, SKU:sku.name, AccessTier:accessTier}" -o table
 
 # Erişim katmanını değiştirme seçeneği
 read -p "Erişim katmanını değiştirmek ister misiniz? (y/n): " changeTier
 if [[ "$changeTier" == "y" ]]; then
   read -p "Yeni erişim katmanı (Hot, Cool, Archive): " newAccessTier
+  print_info "Erişim katmanı değiştiriliyor..."
   az storage account update \
     --name $storageAccountName \
     --resource-group $resourceGroupName \
     --access-tier $newAccessTier
   if [ $? -ne 0 ]; then
-    echo "Hata: Erişim katmanı değiştirilemedi!"
+    print_error "Hata: Erişim katmanı değiştirilemedi!"
     exit 1
   fi
-  echo "Erişim katmanı başarıyla değiştirildi: $newAccessTier"
+  print_success "Erişim katmanı başarıyla değiştirildi: $newAccessTier"
 fi
 
-echo "İşlem tamamlandı!"
+# Zaman takibini durdur ve çalışma süresini hesapla
+end_time=$(date +%s)
+execution_time=$((end_time - start_time))
+
+# İşlem tamamlandı mesajı ve geçen süre
+print_success "İşlem tamamlandı!"
+echo -e "\033[1;36mToplam Geçen Süre: $execution_time saniye.\033[0m"
