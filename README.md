@@ -15,7 +15,9 @@ storageAccountName="mystorageaccount$(date +%s)": mystorageaccount ve zaman damg
 Resource Group Kontrolü ve Oluşturma:
 
 if ! az group show --name $resourceGroupName &>/dev/null; then: Eğer belirtilen Resource Group mevcut değilse,
+
 az group create --name $resourceGroupName --location $location: Yeni bir Resource Group oluşturur.
+
 if [ $? -ne 0 ]; then: Eğer Resource Group oluşturma başarısız olursa,
 echo "Hata: Resource Group oluşturulamadı!": Hata mesajı verir ve betiği sonlandırır.
 else: Eğer Resource Group mevcutsa,
