@@ -16,6 +16,9 @@ function print_error() {
   echo -e "\033[1;31m[ERROR]\033[0m $1"
 }
 
+# Hata durumunda betiği durdur
+set -e
+
 # Kullanıcıdan dinamik parametreler alalım
 read -p "Resource Group Name: " resourceGroupName
 read -p "Location (e.g., EastUS, WestEurope): " location
@@ -34,12 +37,9 @@ fi
 print_info "Resource Group kontrol ediliyor..."
 if ! az group show --name $resourceGroupName &>/dev/null; then
   print_info "Resource Group '$resourceGroupName' mevcut değil. Oluşturuluyor..."
-  az group create --name $resourceGroupName --location $location
-  if [ $? -ne 0 ]; then
-    print_error "Hata: Resource Group oluşturulamadı!"
-    exit 1
-  fi
-  print_success "Resource Group başarıyla oluşturuldu."
+  az group create --name $resourceGroupName --location $location && \
+  print_success "Resource Group başarıyla oluşturuldu." || \
+  { print_error "Hata: Resource Group oluşturulamadı!"; exit 1; }
 else
   print_info "Resource Group '$resourceGroupName' zaten mevcut."
 fi
@@ -54,12 +54,9 @@ if ! az storage account show --name $storageAccountName --resource-group $resour
     --location $location \
     --sku $sku \
     --kind $kind \
-    --access-tier $accessTier
-  if [ $? -ne 0 ]; then
-    print_error "Hata: Storage Account oluşturulamadı!"
-    exit 1
-  fi
-  print_success "Azure Storage Account başarıyla oluşturuldu: $storageAccountName"
+    --access-tier $accessTier && \
+  print_success "Azure Storage Account başarıyla oluşturuldu: $storageAccountName" || \
+  { print_error "Hata: Storage Account oluşturulamadı!"; exit 1; }
 else
   print_info "Storage Account '$storageAccountName' zaten mevcut."
 fi
@@ -76,12 +73,9 @@ if [[ "$changeTier" == "y" ]]; then
   az storage account update \
     --name $storageAccountName \
     --resource-group $resourceGroupName \
-    --access-tier $newAccessTier
-  if [ $? -ne 0 ]; then
-    print_error "Hata: Erişim katmanı değiştirilemedi!"
-    exit 1
-  fi
-  print_success "Erişim katmanı başarıyla değiştirildi: $newAccessTier"
+    --access-tier $newAccessTier && \
+  print_success "Erişim katmanı başarıyla değiştirildi: $newAccessTier" || \
+  { print_error "Hata: Erişim katmanı değiştirilemedi!"; exit 1; }
 fi
 
 # Zaman takibini durdur ve çalışma süresini hesapla
