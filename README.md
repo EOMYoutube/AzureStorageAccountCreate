@@ -24,7 +24,7 @@ Storage Account Kontrolü ve Oluşturma:
 
 if ! az storage account show --name $storageAccountName --resource-group $resourceGroupName &>/dev/null; then: Eğer belirtilen Storage Account mevcut değilse,
 az storage account create: Yeni bir Storage Account oluşturur.
-if [ $? -ne 0 ]; then: Eğer Storage Account oluşturma başarısız olursa,
+if [ $? -ne 0 ] ; then: Eğer Storage Account oluşturma başarısız olursa,
 echo "Hata: Storage Account oluşturulamadı!": Hata mesajı verir ve betiği sonlandırır.
 else: Eğer Storage Account mevcutsa,
 echo "Storage Account '$storageAccountName' zaten mevcut.": Mevcut olduğunu bildirir.
